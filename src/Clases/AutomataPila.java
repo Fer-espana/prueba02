@@ -10,12 +10,15 @@ package Clases;
  */
 import java.util.ArrayList;
 import java.util.Stack;
+import java.util.Collections;
 
 public class AutomataPila extends Automata implements AutomataInterfaz {
 
     public ArrayList<TransicionPila> transicionesPila;
     public ArrayList<Character> simbolosPila;
     private Stack<Character> pila;
+    // Variable para guardar el historial
+    public ArrayList<PasoAP> historial;
 
     public AutomataPila(ArrayList<Character> estados, ArrayList<Character> alfabeto, ArrayList<Character> estadosA, char estadoI, ArrayList<Character> simbolosP, ArrayList<TransicionPila> transiciones) {
         this.estados = estados;
@@ -24,6 +27,7 @@ public class AutomataPila extends Automata implements AutomataInterfaz {
         this.inicial = estadoI;
         this.simbolosPila = simbolosP;
         this.transicionesPila = transiciones;
+        this.historial = new ArrayList<>();
     }
 
     /**
@@ -55,23 +59,27 @@ public class AutomataPila extends Automata implements AutomataInterfaz {
     }
 
     /**
-     * Valida una cadena de entrada usando la lógica de autómata de pila.
+     * Valida una cadena y REGISTRA el historial de pasos del AP.
      *
-     * @param cadena La cadena a validar.
-     * @return Un String indicando si la cadena es válida o inválida.
+     * @param cadena
+     * @return
      */
     @Override
     public String validar(String cadena) {
         this.pila = new Stack<>();
+        this.historial.clear(); // Limpiar historial
         char estadoActual = this.inicial;
         int puntero = 0;
 
+        // Estado inicial del historial
+        historial.add(new PasoAP(estadoActual, cadena, pila));
+
         while (puntero <= cadena.length()) {
-            char caracterActual = (puntero < cadena.length()) ? cadena.charAt(puntero) : '$'; // '$' representa el final de la cadena
+            char caracterActual = (puntero < cadena.length()) ? cadena.charAt(puntero) : '$';
             TransicionPila transicion = encontrarTransicion(estadoActual, caracterActual);
 
             if (transicion != null) {
-                // 1. Manejar la pila
+                // ... (lógica de validación se mantiene igual) ...
                 if (transicion.simboloExtraido != '$') {
                     if (pila.isEmpty() || pila.pop() != transicion.simboloExtraido) {
                         return "Resultado de validacion para '" + cadena + "': Cadena Invalida (error de pila)";
@@ -81,19 +89,20 @@ public class AutomataPila extends Automata implements AutomataInterfaz {
                     pila.push(transicion.simboloIntroducido);
                 }
 
-                // 2. Cambiar de estado
                 estadoActual = transicion.nombreEstadoSiguiente;
-
-                // 3. Avanzar el puntero si la transición consumió un caracter
                 if (transicion.caracter != '$') {
                     puntero++;
                 }
+
+                // Registrar el nuevo paso en el historial
+                String entradaRestante = (puntero < cadena.length()) ? cadena.substring(puntero) : "";
+                historial.add(new PasoAP(estadoActual, entradaRestante, pila));
+
             } else {
                 return "Resultado de validacion para '" + cadena + "': Cadena Invalida (transicion no encontrada)";
             }
 
-            // Condición de salida para evitar bucles infinitos con transiciones vacías
-            if (puntero > cadena.length() + 5) { // Un margen de seguridad
+            if (historial.size() > cadena.length() * 5 + 10) { // Límite de seguridad más robusto
                 return "Resultado de validacion para '" + cadena + "': Cadena Invalida (posible bucle infinito)";
             }
         }
@@ -133,7 +142,6 @@ public class AutomataPila extends Automata implements AutomataInterfaz {
         return this.aceptados.contains(estadoFinal);
     }
 
-
     public String generarDot() {
         StringBuilder sb = new StringBuilder();
         sb.append("digraph AP {\n");
@@ -157,6 +165,72 @@ public class AutomataPila extends Automata implements AutomataInterfaz {
 
         sb.append("}");
         return sb.toString();
+    }
+
+    /**
+     * NUEVO MÉTODO: Genera una lista de códigos .dot, uno para cada paso del
+     * historial.
+     *
+     * @return Una lista de Strings, donde cada String es un código DOT
+     * completo.
+     */
+    public ArrayList<String> generarDotPasoAPaso() {
+        ArrayList<String> dots = new ArrayList<>();
+        if (historial == null || historial.isEmpty()) {
+            return dots;
+        }
+
+        for (int i = 0; i < historial.size(); i++) {
+            PasoAP paso = historial.get(i);
+            StringBuilder sb = new StringBuilder();
+
+            sb.append("digraph AP_Paso_").append(i).append(" {\n");
+            sb.append("rankdir=LR;\n");
+
+            // Subgrafo para la tabla de Entrada y Pila
+            sb.append("subgraph cluster_info {\n");
+            sb.append("label=\"Paso ").append(i).append("\";\n");
+            sb.append("info [shape=none, margin=0, label=<\n");
+            sb.append("<table border='1' cellborder='1' cellspacing='0'>\n");
+            sb.append("<tr><td bgcolor='lightblue'><b>Entrada</b></td></tr>\n");
+            sb.append("<tr><td>").append(paso.entradaRestante.isEmpty() ? "λ" : paso.entradaRestante).append("</td></tr>\n");
+            sb.append("<tr><td bgcolor='lightgreen'><b>Pila</b></td></tr>\n");
+
+            // Construir representación de la pila
+            if (paso.pila.isEmpty()) {
+                sb.append("<tr><td>(vacía)</td></tr>\n");
+            } else {
+                ArrayList<Character> pilaInvertida = new ArrayList<>(paso.pila);
+                Collections.reverse(pilaInvertida);
+                for (Character c : pilaInvertida) {
+                    sb.append("<tr><td>").append(c).append("</td></tr>\n");
+                }
+            }
+            sb.append("</table>>];\n");
+            sb.append("}\n");
+
+            // Grafo del autómata
+            sb.append("node [shape = doublecircle];");
+            for (Character aceptado : aceptados) {
+                sb.append(" ").append(aceptado);
+            }
+            sb.append(";\n");
+
+            sb.append("node [shape = circle];\n");
+
+            // Resaltar estado actual
+            sb.append(paso.estadoActual).append(" [style=filled, fillcolor=lightgreen];\n");
+
+            for (TransicionPila t : this.transicionesPila) {
+                String label = String.format("%c, %c / %c", t.caracter, t.simboloExtraido, t.simboloIntroducido);
+                sb.append(t.nombreEstadoPrimero).append(" -> ").append(t.nombreEstadoSiguiente);
+                sb.append(" [label=\"").append(label).append("\"];\n");
+            }
+
+            sb.append("}");
+            dots.add(sb.toString());
+        }
+        return dots;
     }
 
 }

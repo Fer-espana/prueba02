@@ -12,12 +12,16 @@ import java.util.ArrayList;
 
 public class AFD extends Automata implements AutomataInterfaz {
 
+    // Variable para guardar el historial de la última validación
+    public ArrayList<PasoAFD> historial;
+
     public AFD(ArrayList<Character> estados, ArrayList<Character> alfabeto, ArrayList<Character> estadosA, char estadoI, ArrayList<Transicion> transiciones) {
         this.estados = estados;
         this.alfabeto = alfabeto;
         this.aceptados = estadosA;
         this.inicial = estadoI;
         this.transiciones = transiciones;
+        this.historial = new ArrayList<>();
     }
 
     /**
@@ -54,14 +58,22 @@ public class AFD extends Automata implements AutomataInterfaz {
      */
     @Override
     public String validar(String entrada) {
+        this.historial.clear(); // Limpiar historial anterior
         char estadoActual = this.inicial;
+        String consumido = "";
 
         for (int i = 0; i < entrada.length(); i++) {
             char caracter = entrada.charAt(i);
-            estadoActual = cambiarEstado(estadoActual, caracter);
-            if (estadoActual == '\0') { // Usamos '\0' para indicar un estado nulo/error
+            char estadoSiguiente = cambiarEstado(estadoActual, caracter);
+
+            if (estadoSiguiente == '\0') {
                 return "Resultado de validacion para '" + entrada + "': Cadena Invalida (transicion no encontrada)";
             }
+
+            // Registrar el paso
+            historial.add(new PasoAFD(estadoActual, consumido, caracter, estadoSiguiente));
+            consumido += caracter;
+            estadoActual = estadoSiguiente;
         }
 
         boolean aceptada = esEstadoDeAceptacion(estadoActual);
@@ -112,4 +124,48 @@ public class AFD extends Automata implements AutomataInterfaz {
         sb.append("}");
         return sb.toString();
     }
+
+    /**
+     * NUEVO MÉTODO: Genera el código .dot para el reporte de paso a paso.
+     *
+     * @param cadenaEvaluada La cadena que se validó.
+     * @return El código en formato DOT para Graphviz.
+     */
+    public String generarDotPasoAPaso(String cadenaEvaluada) {
+        if (historial == null || historial.isEmpty()) {
+            return "digraph G { label=\"No hay historial para generar reporte\"; }";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("digraph AFD_Pasos {\n");
+        sb.append("rankdir=LR;\n");
+        sb.append("labelloc=\"t\";\n");
+        sb.append("label=\"Recorrido para la cadena: ").append(cadenaEvaluada).append("\";\n");
+
+        // Definir la forma de los nodos
+        sb.append("node [shape = circle];\n");
+
+        // Crear el camino del recorrido
+        sb.append("node [color=red, fontcolor=red];\n");
+        sb.append("edge [color=red, fontcolor=red];\n");
+
+        // Transición inicial
+        sb.append("inicio [shape=point];\n");
+        sb.append("inicio -> ").append(historial.get(0).estadoActual).append(";\n");
+
+        for (PasoAFD paso : historial) {
+            sb.append(paso.estadoActual).append(" -> ").append(paso.estadoSiguiente);
+            sb.append(" [label=\"").append(paso.caracterEvaluado).append("\"];\n");
+        }
+
+        // Marcar el último estado del recorrido. Si es de aceptación, doble círculo.
+        char ultimoEstado = historial.get(historial.size() - 1).estadoSiguiente;
+        if (esEstadoDeAceptacion(ultimoEstado)) {
+            sb.append(ultimoEstado).append(" [shape=doublecircle];\n");
+        }
+
+        sb.append("}");
+        return sb.toString();
+    }
+
 }

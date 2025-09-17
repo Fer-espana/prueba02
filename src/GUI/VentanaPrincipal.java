@@ -6,6 +6,8 @@ package GUI;
 
 import Analizadores.Parser;
 import Analizadores.Scanner;
+import Clases.AFD;
+import Clases.AutomataPila;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -30,6 +32,7 @@ public class VentanaPrincipal extends javax.swing.JFrame {
     private ArrayList<String> listaTokens; // Para reporte de tokens
     private ArrayList<String> listaErrores; // Para reporte de errores
     private Parser parserResultante;
+    private String ultimaCadenaValidada = "";
 
     public VentanaPrincipal() {
         initComponents();
@@ -262,6 +265,13 @@ public class VentanaPrincipal extends javax.swing.JFrame {
             Parser parser = new Parser(scanner);
             parser.parse(); // Ejecutamos el análisis
             this.parserResultante = parser;
+            // Extraer la última cadena validada para los reportes de pasos
+
+            int ultimaValidacion = textoEntrada.lastIndexOf("(\"");
+            if (ultimaValidacion != -1) {
+                int fin = textoEntrada.lastIndexOf("\")");
+                this.ultimaCadenaValidada = textoEntrada.substring(ultimaValidacion + 2, fin);
+            }
 
             // Mostramos los resultados del análisis (salida de verAutomatas, desc, etc.)
             this.salidatxt.setText(parser.getSalidaConsola());
@@ -420,6 +430,7 @@ public class VentanaPrincipal extends javax.swing.JFrame {
         }
     }
 
+    // Reemplaza el método accionGenerarImagen en VentanaPrincipal.java
     private void accionGenerarImagen() {
         if (this.parserResultante == null || this.boxauto.getSelectedItem() == null) {
             JOptionPane.showMessageDialog(this, "Seleccione un autómata después de ejecutar el análisis.", "Advertencia", JOptionPane.WARNING_MESSAGE);
@@ -430,18 +441,46 @@ public class VentanaPrincipal extends javax.swing.JFrame {
         Clases.Automata automata = this.parserResultante.getAutomatas().get(nombreAutomata);
 
         if (automata != null) {
-            String dotSource = automata.generarDot();
-            String imagePath = Utilidades.GraphvizGenerator.generarImagen(nombreAutomata, dotSource);
+            Object[] options = {"Reporte de Autómata", "Reporte de Pasos"};
+            int n = JOptionPane.showOptionDialog(this,
+                    "¿Qué tipo de reporte desea generar para '" + nombreAutomata + "'?", "Seleccionar Reporte",
+                    JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
 
-            if (imagePath != null) {
-                try {
-                    Desktop.getDesktop().open(new File(imagePath));
-                } catch (Exception e) {
-                    JOptionPane.showMessageDialog(this, "No se pudo abrir la imagen generada.", "Error", JOptionPane.ERROR_MESSAGE);
+            if (n == 0) { // --- Reporte de Autómata ---
+                String dotSource = automata.generarDot();
+                String imagePath = Utilidades.GraphvizGenerator.generarImagen("Automata_" + nombreAutomata, dotSource);
+                abrirArchivo(imagePath, "imagen");
+            } else if (n == 1) { // --- Reporte de Pasos ---
+                if (ultimaCadenaValidada.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "No se ha validado ninguna cadena para generar el reporte de pasos.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+                    return;
                 }
-            } else {
-                JOptionPane.showMessageDialog(this, "Error al generar la imagen con Graphviz. Asegúrese de que esté instalado y en el PATH del sistema.", "Error de Graphviz", JOptionPane.ERROR_MESSAGE);
+
+                if (automata instanceof AFD) {
+                    String dotSource = ((AFD) automata).generarDotPasoAPaso(ultimaCadenaValidada);
+                    String imagePath = Utilidades.GraphvizGenerator.generarImagen("Pasos_AFD_" + nombreAutomata, dotSource);
+                    abrirArchivo(imagePath, "imagen");
+                } else if (automata instanceof AutomataPila) {
+                    ArrayList<String> dots = ((AutomataPila) automata).generarDotPasoAPaso();
+                    for (int i = 0; i < dots.size(); i++) {
+                        String imagePath = Utilidades.GraphvizGenerator.generarImagen("Paso_" + i + "_" + nombreAutomata, dots.get(i));
+                        abrirArchivo(imagePath, "imagen del paso " + i);
+                    }
+                }
             }
+        }
+    }
+
+    // NUEVO MÉTODO AUXILIAR para abrir archivos
+    private void abrirArchivo(String ruta, String tipoArchivo) {
+        if (ruta != null) {
+            try {
+                Desktop.getDesktop().open(new File(ruta));
+            } catch (Exception e) {
+                JOptionPane.showMessageDialog(this, "No se pudo abrir la " + tipoArchivo + " generada.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Error al generar la " + tipoArchivo + ". Asegúrese de que Graphviz esté instalado.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
