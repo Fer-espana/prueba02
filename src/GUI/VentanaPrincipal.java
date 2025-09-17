@@ -15,26 +15,22 @@ import java.util.ArrayList;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import java.awt.Desktop;
 
 /**
  *
  * @author ferna
  */
-
-
-
-
 public class VentanaPrincipal extends javax.swing.JFrame {
 
     /**
      * Creates new form VentanaPrincipal
      */
-    
-    
     // =========== Variables Globales para Reportes y Análisis ===========
     private ArrayList<String> listaTokens; // Para reporte de tokens
     private ArrayList<String> listaErrores; // Para reporte de errores
-    
+    private Parser parserResultante;
+
     public VentanaPrincipal() {
         initComponents();
         this.setLocationRelativeTo(null);
@@ -64,6 +60,8 @@ public class VentanaPrincipal extends javax.swing.JFrame {
         nombrelbl = new javax.swing.JLabel();
         boxauto = new javax.swing.JComboBox<>();
         Bejecutar = new javax.swing.JButton();
+        reporteshtml = new javax.swing.JButton();
+        generarimagen = new javax.swing.JButton();
         jMenuBar2 = new javax.swing.JMenuBar();
         Archivomenu = new javax.swing.JMenu();
         nuevoarch = new javax.swing.JMenuItem();
@@ -105,6 +103,10 @@ public class VentanaPrincipal extends javax.swing.JFrame {
 
         Bejecutar.setText("EJECUTAR");
 
+        reporteshtml.setText("REPORTES");
+
+        generarimagen.setText("GENERAR IMAGEN");
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -115,13 +117,6 @@ public class VentanaPrincipal extends javax.swing.JFrame {
                     .addComponent(jLabel1)
                     .addComponent(jScrollPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 918, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                        .addGroup(jPanel1Layout.createSequentialGroup()
-                            .addComponent(nombrelbl)
-                            .addGap(18, 18, 18)
-                            .addComponent(boxauto, javax.swing.GroupLayout.PREFERRED_SIZE, 189, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
-                            .addComponent(Bejecutar, javax.swing.GroupLayout.PREFERRED_SIZE, 134, javax.swing.GroupLayout.PREFERRED_SIZE)
-                            .addGap(20, 20, 20))
                         .addGroup(javax.swing.GroupLayout.Alignment.LEADING, jPanel1Layout.createSequentialGroup()
                             .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 471, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -129,7 +124,18 @@ public class VentanaPrincipal extends javax.swing.JFrame {
                             .addGap(18, 18, 18)
                             .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
                                 .addComponent(jLabel3)
-                                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 429, javax.swing.GroupLayout.PREFERRED_SIZE)))))
+                                .addComponent(jScrollPane3, javax.swing.GroupLayout.PREFERRED_SIZE, 429, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGroup(jPanel1Layout.createSequentialGroup()
+                            .addComponent(nombrelbl)
+                            .addGap(18, 18, 18)
+                            .addComponent(boxauto, javax.swing.GroupLayout.PREFERRED_SIZE, 189, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                            .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(generarimagen, javax.swing.GroupLayout.DEFAULT_SIZE, 134, Short.MAX_VALUE)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                    .addComponent(reporteshtml, javax.swing.GroupLayout.DEFAULT_SIZE, 134, Short.MAX_VALUE)
+                                    .addComponent(Bejecutar, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                            .addGap(20, 20, 20))))
                 .addContainerGap(32, Short.MAX_VALUE))
         );
         jPanel1Layout.setVerticalGroup(
@@ -140,7 +146,11 @@ public class VentanaPrincipal extends javax.swing.JFrame {
                     .addComponent(nombrelbl)
                     .addComponent(boxauto, javax.swing.GroupLayout.PREFERRED_SIZE, 36, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(Bejecutar))
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 81, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(reporteshtml)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(generarimagen)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 15, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel3)
                     .addComponent(jLabel2))
@@ -228,10 +238,10 @@ public class VentanaPrincipal extends javax.swing.JFrame {
             }
         });
     }
-    
+
     /**
-     * Acción que se ejecuta al presionar el botón "Ejecutar".
-     * Analiza el texto de entrada, actualiza la consola de salida y el ComboBox.
+     * Acción que se ejecuta al presionar el botón "Ejecutar". Analiza el texto
+     * de entrada, actualiza la consola de salida y el ComboBox.
      */
     private void accionEjecutar() {
         String textoEntrada = this.entradatxt.getText();
@@ -251,10 +261,11 @@ public class VentanaPrincipal extends javax.swing.JFrame {
             Scanner scanner = new Scanner(new BufferedReader(new StringReader(textoEntrada)), this.listaTokens, this.listaErrores);
             Parser parser = new Parser(scanner);
             parser.parse(); // Ejecutamos el análisis
+            this.parserResultante = parser;
 
             // Mostramos los resultados del análisis (salida de verAutomatas, desc, etc.)
             this.salidatxt.setText(parser.getSalidaConsola());
-            
+
             // Actualizamos el ComboBox con los autómatas creados
             this.boxauto.removeAllItems();
             for (String nombreAutomata : parser.getAutomatas().keySet()) {
@@ -269,7 +280,6 @@ public class VentanaPrincipal extends javax.swing.JFrame {
         }
     }
 
-
     /**
      * Este método enlaza los eventos (como clics) con las acciones a realizar.
      */
@@ -281,12 +291,14 @@ public class VentanaPrincipal extends javax.swing.JFrame {
 
         // --- Botón Ejecutar ---
         this.Bejecutar.addActionListener(e -> accionEjecutar());
+        this.reporteshtml.addActionListener(e -> accionReportesHtml());
+        this.generarimagen.addActionListener(e -> accionGenerarImagen());
 
         // --- Menú Reportes ---
         this.repotokens.addActionListener(e -> accionReporteTokens());
         this.repoerrores.addActionListener(e -> accionReporteErrores());
     }
-    
+
     /**
      * Limpia el área de texto de entrada.
      */
@@ -338,7 +350,7 @@ public class VentanaPrincipal extends javax.swing.JFrame {
             }
         }
     }
-    
+
     /**
      * Muestra el reporte de tokens en el JTextArea de reportes.
      */
@@ -356,7 +368,7 @@ public class VentanaPrincipal extends javax.swing.JFrame {
         for (String tokenInfo : this.listaTokens) {
             sb.append(tokenInfo).append("\n");
         }
-        
+
         this.reportetxt.setText(sb.toString());
     }
 
@@ -378,12 +390,61 @@ public class VentanaPrincipal extends javax.swing.JFrame {
         for (String errorInfo : this.listaErrores) {
             sb.append(errorInfo).append("\n");
         }
-        
+
         this.reportetxt.setText(sb.toString());
     }
-    
-    
-    
+
+    private void accionReportesHtml() {
+        if (this.listaTokens == null || this.listaErrores == null) {
+            JOptionPane.showMessageDialog(this, "Debe ejecutar un análisis primero.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        // Generar reporte de tokens
+        String[] encabezadosTokens = {"#", "Lexema", "Tipo", "Línea", "Columna"};
+        String rutaTokens = Utilidades.ReporteGenerator.generarHtmlReporte("Reporte de Tokens", encabezadosTokens, this.listaTokens);
+
+        // Generar reporte de errores
+        String[] encabezadosErrores = {"#", "Tipo", "Descripción", "Línea", "Columna"};
+        String rutaErrores = Utilidades.ReporteGenerator.generarHtmlReporte("Reporte de Errores", encabezadosErrores, this.listaErrores);
+
+        try {
+            if (rutaTokens != null) {
+                Desktop.getDesktop().browse(new File(rutaTokens).toURI());
+            }
+            if (rutaErrores != null) {
+                Desktop.getDesktop().browse(new File(rutaErrores).toURI());
+            }
+        } catch (Exception e) {
+            JOptionPane.showMessageDialog(this, "No se pudieron abrir los reportes HTML.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void accionGenerarImagen() {
+        if (this.parserResultante == null || this.boxauto.getSelectedItem() == null) {
+            JOptionPane.showMessageDialog(this, "Seleccione un autómata después de ejecutar el análisis.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        String nombreAutomata = (String) this.boxauto.getSelectedItem();
+        Clases.Automata automata = this.parserResultante.getAutomatas().get(nombreAutomata);
+
+        if (automata != null) {
+            String dotSource = automata.generarDot();
+            String imagePath = Utilidades.GraphvizGenerator.generarImagen(nombreAutomata, dotSource);
+
+            if (imagePath != null) {
+                try {
+                    Desktop.getDesktop().open(new File(imagePath));
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(this, "No se pudo abrir la imagen generada.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Error al generar la imagen con Graphviz. Asegúrese de que esté instalado y en el PATH del sistema.", "Error de Graphviz", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JMenu Archivomenu;
@@ -391,6 +452,7 @@ public class VentanaPrincipal extends javax.swing.JFrame {
     private javax.swing.JMenuItem abrirarch;
     private javax.swing.JComboBox<String> boxauto;
     private javax.swing.JTextArea entradatxt;
+    private javax.swing.JButton generarimagen;
     private javax.swing.JMenuItem guardararch;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
@@ -403,6 +465,7 @@ public class VentanaPrincipal extends javax.swing.JFrame {
     private javax.swing.JLabel nombrelbl;
     private javax.swing.JMenuItem nuevoarch;
     private javax.swing.JMenuItem repoerrores;
+    private javax.swing.JButton reporteshtml;
     private javax.swing.JMenu reportesmenu;
     private javax.swing.JTextArea reportetxt;
     private javax.swing.JMenuItem repotokens;

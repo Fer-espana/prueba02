@@ -27,7 +27,9 @@ public class AutomataPila extends Automata implements AutomataInterfaz {
     }
 
     /**
-     * Construye y devuelve una cadena con la descripción completa del autómata de pila.
+     * Construye y devuelve una cadena con la descripción completa del autómata
+     * de pila.
+     *
      * @param nombre El nombre del autómata a mostrar.
      * @return Un String formateado con los detalles del AP.
      */
@@ -54,6 +56,7 @@ public class AutomataPila extends Automata implements AutomataInterfaz {
 
     /**
      * Valida una cadena de entrada usando la lógica de autómata de pila.
+     *
      * @param cadena La cadena a validar.
      * @return Un String indicando si la cadena es válida o inválida.
      */
@@ -77,7 +80,7 @@ public class AutomataPila extends Automata implements AutomataInterfaz {
                 if (transicion.simboloIntroducido != '$') {
                     pila.push(transicion.simboloIntroducido);
                 }
-                
+
                 // 2. Cambiar de estado
                 estadoActual = transicion.nombreEstadoSiguiente;
 
@@ -88,10 +91,10 @@ public class AutomataPila extends Automata implements AutomataInterfaz {
             } else {
                 return "Resultado de validacion para '" + cadena + "': Cadena Invalida (transicion no encontrada)";
             }
-            
+
             // Condición de salida para evitar bucles infinitos con transiciones vacías
             if (puntero > cadena.length() + 5) { // Un margen de seguridad
-                 return "Resultado de validacion para '" + cadena + "': Cadena Invalida (posible bucle infinito)";
+                return "Resultado de validacion para '" + cadena + "': Cadena Invalida (posible bucle infinito)";
             }
         }
 
@@ -101,9 +104,10 @@ public class AutomataPila extends Automata implements AutomataInterfaz {
             return "Resultado de validacion para '" + cadena + "': Cadena Invalida (no terminó en estado de aceptación o la pila no está vacía)";
         }
     }
-    
+
     /**
-     * Busca una transición válida desde el estado actual con el caracter o una transición vacía.
+     * Busca una transición válida desde el estado actual con el caracter o una
+     * transición vacía.
      */
     private TransicionPila encontrarTransicion(char estadoActual, char caracter) {
         // Prioridad 1: Transición que coincide con el caracter
@@ -117,7 +121,7 @@ public class AutomataPila extends Automata implements AutomataInterfaz {
         // Prioridad 2: Transición vacía ($)
         for (TransicionPila t : this.transicionesPila) {
             if (t.nombreEstadoPrimero == estadoActual && t.caracter == '$') {
-                 if (t.simboloExtraido == '$' || (!pila.isEmpty() && pila.peek() == t.simboloExtraido)) {
+                if (t.simboloExtraido == '$' || (!pila.isEmpty() && pila.peek() == t.simboloExtraido)) {
                     return t;
                 }
             }
@@ -128,4 +132,31 @@ public class AutomataPila extends Automata implements AutomataInterfaz {
     private boolean esEstadoDeAceptacion(char estadoFinal) {
         return this.aceptados.contains(estadoFinal);
     }
+
+
+    public String generarDot() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("digraph AP {\n");
+        sb.append("rankdir=LR;\n");
+        sb.append("node [shape = point]; inicio;\n");
+
+        sb.append("node [shape = doublecircle];");
+        for (Character aceptado : aceptados) {
+            sb.append(" ").append(aceptado);
+        }
+        sb.append(";\n");
+
+        sb.append("node [shape = circle];\n");
+        sb.append("inicio -> ").append(inicial).append(";\n");
+
+        for (TransicionPila t : this.transicionesPila) {
+            String label = String.format("%c, %c / %c", t.caracter, t.simboloExtraido, t.simboloIntroducido);
+            sb.append(t.nombreEstadoPrimero).append(" -> ").append(t.nombreEstadoSiguiente);
+            sb.append(" [label=\"").append(label).append("\"];\n");
+        }
+
+        sb.append("}");
+        return sb.toString();
+    }
+
 }

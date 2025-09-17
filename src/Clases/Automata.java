@@ -19,4 +19,5 @@ public abstract class Automata {
 
     // Metodo abstracto para obligar a las clases hijas a implementarlo
     public abstract String mostrarInfo(String nombre);
+    public abstract String generarDot();
 }

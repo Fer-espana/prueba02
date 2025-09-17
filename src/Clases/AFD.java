@@ -22,6 +22,7 @@ public class AFD extends Automata implements AutomataInterfaz {
 
     /**
      * Construye y devuelve una cadena con la descripción completa del autómata.
+     *
      * @param nombre El nombre del autómata a mostrar.
      * @return Un String formateado con los detalles del AFD.
      */
@@ -47,6 +48,7 @@ public class AFD extends Automata implements AutomataInterfaz {
 
     /**
      * Valida una cadena de entrada y devuelve el resultado como un String.
+     *
      * @param entrada La cadena a validar.
      * @return Un String indicando si la cadena es válida o inválida.
      */
@@ -67,7 +69,9 @@ public class AFD extends Automata implements AutomataInterfaz {
     }
 
     private char cambiarEstado(char estadoActual, char token) {
-        if (this.transiciones == null) return '\0';
+        if (this.transiciones == null) {
+            return '\0';
+        }
         for (Transicion t : this.transiciones) {
             if (t.nombreEstadoPrimero == estadoActual && t.caracter == token) {
                 return t.nombreEstadoSiguiente;
@@ -78,5 +82,34 @@ public class AFD extends Automata implements AutomataInterfaz {
 
     private boolean esEstadoDeAceptacion(char estadoFinal) {
         return this.aceptados.contains(estadoFinal);
+    }
+
+    public String generarDot() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("digraph AFD {\n");
+        sb.append("rankdir=LR;\n");
+        sb.append("node [shape = point]; inicio;\n"); // Nodo de inicio invisible
+
+        // Marcar estados de aceptación con doble círculo
+        sb.append("node [shape = doublecircle];");
+        for (Character aceptado : aceptados) {
+            sb.append(" ").append(aceptado);
+        }
+        sb.append(";\n");
+
+        // Resetear la forma de los nodos a círculo normal
+        sb.append("node [shape = circle];\n");
+
+        // Transición desde el inicio al estado inicial
+        sb.append("inicio -> ").append(inicial).append(";\n");
+
+        // Agregar todas las transiciones
+        for (Transicion t : this.transiciones) {
+            sb.append(t.nombreEstadoPrimero).append(" -> ").append(t.nombreEstadoSiguiente);
+            sb.append(" [label=\"").append(t.caracter).append("\"];\n");
+        }
+
+        sb.append("}");
+        return sb.toString();
     }
 }
