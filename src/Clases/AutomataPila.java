@@ -142,7 +142,7 @@ public class AutomataPila extends Automata implements AutomataInterfaz {
         return this.aceptados.contains(estadoFinal);
     }
 
-    public String generarDot() {
+    public String generarDot(String nombre) {
         StringBuilder sb = new StringBuilder();
         sb.append("digraph AP {\n");
         sb.append("rankdir=LR;\n");

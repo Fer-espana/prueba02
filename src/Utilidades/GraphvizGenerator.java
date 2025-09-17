@@ -14,7 +14,7 @@ import java.io.PrintWriter;
 
 public class GraphvizGenerator {
     
-    public static String generarImagen(String nombreArchivo, String dotSource) {
+    public static File generarImagen(String nombreArchivo, String dotSource) {
         String baseFileName = nombreArchivo.replaceAll("\\s+", "_");
         File dotFile;
         try {
@@ -43,7 +43,7 @@ public class GraphvizGenerator {
             // Limpiar el archivo .dot temporal
             dotFile.delete();
 
-            return outputPath; // Devolver la ruta de la imagen generada
+            return new File(outputPath); // Devolver la ruta de la imagen generada
 
         } catch (Exception e) {
             e.printStackTrace();

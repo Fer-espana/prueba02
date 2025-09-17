@@ -19,7 +19,7 @@ public abstract class Automata implements AutomataInterfaz { // <--- CAMBIO 1: i
 
     // Metodos abstractos para obligar a las clases hijas a implementarlos
     public abstract String mostrarInfo(String nombre);
-    public abstract String generarDot();
+    public abstract String generarDot(String nombre); 
     
     @Override // <--- CAMBIO 2: Añadir la declaración del método de la interfaz
     public abstract String validar(String cadena); 

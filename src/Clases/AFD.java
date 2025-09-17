@@ -96,31 +96,32 @@ public class AFD extends Automata implements AutomataInterfaz {
         return this.aceptados.contains(estadoFinal);
     }
 
-    public String generarDot() {
+    @Override
+    public String generarDot(String nombre) {
         StringBuilder sb = new StringBuilder();
         sb.append("digraph AFD {\n");
-        sb.append("rankdir=LR;\n");
-        sb.append("node [shape = point]; inicio;\n"); // Nodo de inicio invisible
+        sb.append("    rankdir=LR;\n");
+        sb.append("    labelloc=\"t\";\n");
+        sb.append("    label=\"").append(nombre).append("\";\n\n");
 
-        // Marcar estados de aceptación con doble círculo
-        sb.append("node [shape = doublecircle];");
-        for (Character aceptado : aceptados) {
-            sb.append(" ").append(aceptado);
+        // --- Grafo del autómata ---
+        sb.append("    node [shape = point]; inicio;\n");
+        sb.append("    node [shape = doublecircle];");
+        if (aceptados != null) {
+            for (Character aceptado : aceptados) {
+                sb.append(" \"").append(aceptado).append("\"");
+            }
         }
         sb.append(";\n");
+        sb.append("    node [shape = circle];\n");
+        sb.append("    inicio -> \"").append(inicial).append("\";\n");
 
-        // Resetear la forma de los nodos a círculo normal
-        sb.append("node [shape = circle];\n");
-
-        // Transición desde el inicio al estado inicial
-        sb.append("inicio -> ").append(inicial).append(";\n");
-
-        // Agregar todas las transiciones
-        for (Transicion t : this.transiciones) {
-            sb.append(t.nombreEstadoPrimero).append(" -> ").append(t.nombreEstadoSiguiente);
-            sb.append(" [label=\"").append(t.caracter).append("\"];\n");
+        if (this.transiciones != null) {
+            for (Transicion t : this.transiciones) {
+                sb.append("    \"").append(t.nombreEstadoPrimero).append("\" -> \"").append(t.nombreEstadoSiguiente).append("\"");
+                sb.append(" [label=\"").append(t.caracter).append("\"];\n");
+            }
         }
-
         sb.append("}");
         return sb.toString();
     }
