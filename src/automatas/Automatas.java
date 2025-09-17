@@ -53,8 +53,8 @@ public class Automatas {
 
     public static void main(String[] args) {
         // Crea una instancia de la ventana principal y la hace visible
-        VentanaPrincipal ventana = new VentanaPrincipal();
-        ventana.setVisible(true);
+//        VentanaPrincipal ventana = new VentanaPrincipal();
+//        ventana.setVisible(true);
     }
 
     
