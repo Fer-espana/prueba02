@@ -13,37 +13,44 @@ import java.io.PrintWriter;
 
 
 public class GraphvizGenerator {
-    
+
     public static File generarImagen(String nombreArchivo, String dotSource) {
-        String baseFileName = nombreArchivo.replaceAll("\\s+", "_");
+        // Obtenemos la ruta del directorio del proyecto
+        String projectDir = System.getProperty("user.dir");
+        // Definimos la carpeta de salida para las imágenes
+        File outputDir = new File(projectDir + "/src/Imagenes/");
+        
+        // Creamos la carpeta si no existe
+        if (!outputDir.exists()) {
+            outputDir.mkdirs();
+        }
+
+        String baseFileName = nombreArchivo.replaceAll("[^a-zA-Z0-9_]", "_"); // Limpiamos el nombre del archivo
         File dotFile;
+        
         try {
-            // Crear un archivo temporal para el código DOT
             dotFile = File.createTempFile(baseFileName, ".dot");
             try (PrintWriter writer = new PrintWriter(dotFile)) {
                 writer.print(dotSource);
             }
 
-            // Definir la ruta del archivo de salida
-            String outputPath = System.getProperty("java.io.tmpdir") + baseFileName + ".png";
+            // La ruta de salida ahora apunta a nuestra carpeta 'Imagenes'
+            File outputFile = new File(outputDir, baseFileName + ".png");
             
-            // Crear el comando para ejecutar Graphviz
             ProcessBuilder pb = new ProcessBuilder(
                 "dot",
                 "-Tpng",
                 dotFile.getAbsolutePath(),
                 "-o",
-                outputPath
+                outputFile.getAbsolutePath()
             );
             
-            // Ejecutar el proceso
             Process process = pb.start();
-            process.waitFor(); // Esperar a que termine la generación de la imagen
+            process.waitFor();
 
-            // Limpiar el archivo .dot temporal
             dotFile.delete();
 
-            return new File(outputPath); // Devolver la ruta de la imagen generada
+            return outputFile;
 
         } catch (Exception e) {
             e.printStackTrace();

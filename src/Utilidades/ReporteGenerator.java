@@ -18,10 +18,22 @@ public class ReporteGenerator {
 
     public static String generarHtmlReporte(String titulo, String[] encabezados, ArrayList<String> filas) {
         try {
-            File tempFile = File.createTempFile(titulo.replaceAll("\\s+", ""), ".html");
-            PrintWriter writer = new PrintWriter(tempFile, "UTF-8");
+            // Obtenemos la ruta del directorio del proyecto
+            String projectDir = System.getProperty("user.dir");
+            // Definimos la carpeta de salida para los reportes
+            File reportesDir = new File(projectDir + "/src/Reportes/");
 
-            // Escribir el encabezado del HTML
+            // Creamos la carpeta si no existe
+            if (!reportesDir.exists()) {
+                reportesDir.mkdirs();
+            }
+            
+            String fileName = titulo.replaceAll("\\s+", "_");
+            File htmlFile = new File(reportesDir, fileName + ".html");
+            
+            PrintWriter writer = new PrintWriter(htmlFile, "UTF-8");
+
+            // ... (el resto del código que escribe el HTML se mantiene exactamente igual) ...
             writer.println("<!DOCTYPE html>");
             writer.println("<html lang=\"es\">");
             writer.println("<head>");
@@ -39,19 +51,16 @@ public class ReporteGenerator {
             writer.println("<body>");
             writer.println("<h1>" + titulo + "</h1>");
             writer.println("<table>");
-            
-            // Escribir encabezados de la tabla
             writer.println("<thead><tr>");
             for (String encabezado : encabezados) {
                 writer.println("<th>" + encabezado + "</th>");
             }
             writer.println("</tr></thead>");
-
-            // Escribir filas de la tabla
             writer.println("<tbody>");
             for (String fila : filas) {
                 writer.println("<tr>");
-                String[] celdas = fila.split("\\|");
+                // Dividimos la fila por el delimitador que usamos en el Scanner
+                String[] celdas = fila.split("\\s*\\|\\s*"); 
                 for (String celda : celdas) {
                     writer.println("<td>" + celda.trim() + "</td>");
                 }
@@ -63,7 +72,7 @@ public class ReporteGenerator {
             writer.println("</html>");
 
             writer.close();
-            return tempFile.getAbsolutePath();
+            return htmlFile.getAbsolutePath();
 
         } catch (Exception e) {
             e.printStackTrace();
