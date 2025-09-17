@@ -450,34 +450,16 @@ public class VentanaPrincipal extends javax.swing.JFrame {
                     "¿Qué tipo de reporte desea generar para '" + nombreAutomata + "'?", "Seleccionar Reporte",
                     JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
 
-            if (n == 0) { // --- Reporte de Autómata (NUEVA LÓGICA) ---
-                try {
-                    String infoTexto = automata.mostrarInfo(nombreAutomata);
-                    String dotSource = automata.generarDot(nombreAutomata);
-
-                    BufferedImage imagenTexto = crearImagenDeTexto(infoTexto);
-                    File archivoGrafo = Utilidades.GraphvizGenerator.generarImagen("Automata_" + nombreAutomata, dotSource);
-
-                    if (archivoGrafo == null || !archivoGrafo.exists()) {
-                        throw new Exception("Graphviz no pudo generar la imagen del grafo.");
-                    }
-                    BufferedImage imagenGrafo = ImageIO.read(archivoGrafo);
-
-                    BufferedImage imagenFinal = combinarImagenes(imagenTexto, imagenGrafo);
-
-                    File archivoSalida = new File(System.getProperty("java.io.tmpdir") + "Reporte_" + nombreAutomata + ".png");
-                    ImageIO.write(imagenFinal, "png", archivoSalida);
-                    abrirArchivo(archivoSalida, "imagen");
-                } catch (Exception e) {
-                    JOptionPane.showMessageDialog(this, "Error al generar el reporte visual: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-                }
+            if (n == 0) { // --- Reporte de Autómata ---
+                String dotSource = automata.generarDot(nombreAutomata);
+                File imageFile = Utilidades.GraphvizGenerator.generarImagen("Automata_" + nombreAutomata, dotSource);
+                abrirArchivo(imageFile, "imagen");
 
             } else if (n == 1) { // --- Reporte de Pasos ---
                 String cadenaParaValidar = JOptionPane.showInputDialog(this, "Ingrese la cadena que desea validar:", "Validación de Cadena", JOptionPane.QUESTION_MESSAGE);
                 if (cadenaParaValidar == null) {
-                    return;
+                    return; // El usuario presionó cancelar
                 }
-
                 automata.validar(cadenaParaValidar);
 
                 if (automata instanceof AFD) {
@@ -485,8 +467,19 @@ public class VentanaPrincipal extends javax.swing.JFrame {
                     File imageFile = Utilidades.GraphvizGenerator.generarImagen("Pasos_AFD_" + nombreAutomata, dotSource);
                     abrirArchivo(imageFile, "imagen de pasos");
                 } else if (automata instanceof AutomataPila) {
-                    // Lógica para AP (próximo paso)
-                    JOptionPane.showMessageDialog(this, "El reporte de pasos para Autómatas de Pila aún no está implementado.", "Información", JOptionPane.INFORMATION_MESSAGE);
+                    // --- ESTA ES LA LÓGICA CORREGIDA ---
+                    ArrayList<String> dots = ((AutomataPila) automata).generarDotPasoAPaso();
+                    if (dots.isEmpty()) {
+                        JOptionPane.showMessageDialog(this, "No se generó historial para el reporte de pasos.", "Información", JOptionPane.INFORMATION_MESSAGE);
+                        return;
+                    }
+
+                    JOptionPane.showMessageDialog(this, "Se generarán " + dots.size() + " imágenes para el reporte de pasos. Presione Aceptar para continuar.", "Aviso", JOptionPane.INFORMATION_MESSAGE);
+
+                    for (int i = 0; i < dots.size(); i++) {
+                        File imageFile = Utilidades.GraphvizGenerator.generarImagen("Paso_" + i + "_" + nombreAutomata, dots.get(i));
+                        abrirArchivo(imageFile, "imagen del paso " + i);
+                    }
                 }
             }
         }
