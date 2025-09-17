@@ -450,16 +450,23 @@ public class VentanaPrincipal extends javax.swing.JFrame {
                 String dotSource = automata.generarDot();
                 String imagePath = Utilidades.GraphvizGenerator.generarImagen("Automata_" + nombreAutomata, dotSource);
                 abrirArchivo(imagePath, "imagen");
+
             } else if (n == 1) { // --- Reporte de Pasos ---
-                if (ultimaCadenaValidada.isEmpty()) {
-                    JOptionPane.showMessageDialog(this, "No se ha validado ninguna cadena para generar el reporte de pasos.", "Advertencia", JOptionPane.WARNING_MESSAGE);
+                // SOLUCIÓN: Preguntar al usuario por la cadena a validar
+                String cadenaParaValidar = JOptionPane.showInputDialog(this, "Ingrese la cadena que desea validar:", "Validación de Cadena", JOptionPane.QUESTION_MESSAGE);
+
+                if (cadenaParaValidar == null || cadenaParaValidar.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "No se ingresó ninguna cadena.", "Cancelado", JOptionPane.WARNING_MESSAGE);
                     return;
                 }
 
+                // Realizamos la validación para generar el historial
+                automata.validar(cadenaParaValidar);
+
                 if (automata instanceof AFD) {
-                    String dotSource = ((AFD) automata).generarDotPasoAPaso(ultimaCadenaValidada);
+                    String dotSource = ((AFD) automata).generarDotPasoAPaso(cadenaParaValidar);
                     String imagePath = Utilidades.GraphvizGenerator.generarImagen("Pasos_AFD_" + nombreAutomata, dotSource);
-                    abrirArchivo(imagePath, "imagen");
+                    abrirArchivo(imagePath, "imagen de pasos");
                 } else if (automata instanceof AutomataPila) {
                     ArrayList<String> dots = ((AutomataPila) automata).generarDotPasoAPaso();
                     for (int i = 0; i < dots.size(); i++) {

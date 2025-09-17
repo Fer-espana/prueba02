@@ -10,14 +10,17 @@ package Clases;
  */
 import java.util.ArrayList;
 
-public abstract class Automata {
+public abstract class Automata implements AutomataInterfaz { // <--- CAMBIO 1: implementar la interfaz
     public ArrayList<Character> estados;
     public ArrayList<Character> alfabeto;
     public char inicial;
     public ArrayList<Character> aceptados;
     public ArrayList<Transicion> transiciones;
 
-    // Metodo abstracto para obligar a las clases hijas a implementarlo
+    // Metodos abstractos para obligar a las clases hijas a implementarlos
     public abstract String mostrarInfo(String nombre);
     public abstract String generarDot();
+    
+    @Override // <--- CAMBIO 2: Añadir la declaración del método de la interfaz
+    public abstract String validar(String cadena); 
 }

@@ -142,26 +142,34 @@ public class AFD extends Automata implements AutomataInterfaz {
         sb.append("labelloc=\"t\";\n");
         sb.append("label=\"Recorrido para la cadena: ").append(cadenaEvaluada).append("\";\n");
 
-        // Definir la forma de los nodos
+        // 1. DIBUJAR TODO EL AUTÓMATA EN NEGRO (COLOR POR DEFECTO)
+        sb.append("node [shape = point, color=black]; inicio;\n");
+        sb.append("node [shape = doublecircle, color=black, fontcolor=black];");
+        for (Character aceptado : aceptados) {
+            sb.append(" ").append(aceptado);
+        }
+        sb.append(";\n");
         sb.append("node [shape = circle];\n");
+        sb.append("inicio -> ").append(inicial).append(" [color=black];\n");
 
-        // Crear el camino del recorrido
+        for (Transicion t : this.transiciones) {
+            sb.append(t.nombreEstadoPrimero).append(" -> ").append(t.nombreEstadoSiguiente);
+            sb.append(" [label=\"").append(t.caracter).append("\", color=black, fontcolor=black];\n");
+        }
+
+        // 2. SOBREESCRIBIR EL CAMINO DEL RECORRIDO EN ROJO
+        // Se definen los nodos y aristas del camino con color rojo.
+        // Graphviz aplicará esta última definición a los elementos del camino.
         sb.append("node [color=red, fontcolor=red];\n");
         sb.append("edge [color=red, fontcolor=red];\n");
 
-        // Transición inicial
-        sb.append("inicio [shape=point];\n");
+        // Transición inicial del recorrido
         sb.append("inicio -> ").append(historial.get(0).estadoActual).append(";\n");
 
         for (PasoAFD paso : historial) {
+            // Se define la arista del paso actual en rojo
             sb.append(paso.estadoActual).append(" -> ").append(paso.estadoSiguiente);
             sb.append(" [label=\"").append(paso.caracterEvaluado).append("\"];\n");
-        }
-
-        // Marcar el último estado del recorrido. Si es de aceptación, doble círculo.
-        char ultimoEstado = historial.get(historial.size() - 1).estadoSiguiente;
-        if (esEstadoDeAceptacion(ultimoEstado)) {
-            sb.append(ultimoEstado).append(" [shape=doublecircle];\n");
         }
 
         sb.append("}");
