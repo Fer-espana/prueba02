@@ -33,20 +33,18 @@ public class AFD extends Automata implements AutomataInterfaz {
     @Override
     public String mostrarInfo(String nombre) {
         StringBuilder sb = new StringBuilder();
-        sb.append("---------------------------------\n");
         sb.append("Nombre: ").append(nombre).append("\n");
         sb.append("Tipo: Automata Finito Determinista\n");
         sb.append("Estados: ").append(this.estados.toString()).append("\n");
         sb.append("Alfabeto: ").append(this.alfabeto.toString()).append("\n");
         sb.append("Estado Inicial: ").append(this.inicial).append("\n");
         sb.append("Estados de aceptacion: ").append(this.aceptados.toString()).append("\n");
-        sb.append("Transiciones: ");
+        sb.append("Transiciones:\n");
         if (this.transiciones != null) {
             for (Transicion t : this.transiciones) {
-                sb.append(t.nombreEstadoPrimero).append("->").append(t.caracter).append(",").append(t.nombreEstadoSiguiente).append("; ");
+                sb.append("  ").append(t.nombreEstadoPrimero).append(" -> ").append(t.caracter).append(", ").append(t.nombreEstadoSiguiente).append(";\n");
             }
         }
-        sb.append("\n---------------------------------\n");
         return sb.toString();
     }
 
@@ -103,8 +101,6 @@ public class AFD extends Automata implements AutomataInterfaz {
         sb.append("    rankdir=LR;\n");
         sb.append("    labelloc=\"t\";\n");
         sb.append("    label=\"").append(nombre).append("\";\n\n");
-
-        // --- Grafo del autómata ---
         sb.append("    node [shape = point]; inicio;\n");
         sb.append("    node [shape = doublecircle];");
         if (aceptados != null) {

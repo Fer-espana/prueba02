@@ -445,42 +445,58 @@ public class VentanaPrincipal extends javax.swing.JFrame {
         Clases.Automata automata = this.parserResultante.getAutomatas().get(nombreAutomata);
 
         if (automata != null) {
-            // Lógica para el REPORTE DE AUTÓMATA
-            try {
-                // 1. Obtener la información textual y el grafo en DOT
-                String infoTexto = automata.mostrarInfo(nombreAutomata);
-                String dotSource = automata.generarDot(nombreAutomata);
+            Object[] options = {"Reporte de Autómata", "Reporte de Pasos"};
+            int n = JOptionPane.showOptionDialog(this,
+                    "¿Qué tipo de reporte desea generar para '" + nombreAutomata + "'?", "Seleccionar Reporte",
+                    JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
 
-                // 2. Crear una imagen a partir del texto
-                BufferedImage imagenTexto = crearImagenDeTexto(infoTexto);
+            if (n == 0) { // --- Reporte de Autómata (NUEVA LÓGICA) ---
+                try {
+                    String infoTexto = automata.mostrarInfo(nombreAutomata);
+                    String dotSource = automata.generarDot(nombreAutomata);
 
-                // 3. Crear una imagen a partir del grafo con Graphviz
-                File archivoGrafo = Utilidades.GraphvizGenerator.generarImagen("Automata_" + nombreAutomata, dotSource);
-                if (archivoGrafo == null || !archivoGrafo.exists()) {
-                    throw new Exception("Graphviz no pudo generar la imagen del grafo.");
+                    BufferedImage imagenTexto = crearImagenDeTexto(infoTexto);
+                    File archivoGrafo = Utilidades.GraphvizGenerator.generarImagen("Automata_" + nombreAutomata, dotSource);
+
+                    if (archivoGrafo == null || !archivoGrafo.exists()) {
+                        throw new Exception("Graphviz no pudo generar la imagen del grafo.");
+                    }
+                    BufferedImage imagenGrafo = ImageIO.read(archivoGrafo);
+
+                    BufferedImage imagenFinal = combinarImagenes(imagenTexto, imagenGrafo);
+
+                    File archivoSalida = new File(System.getProperty("java.io.tmpdir") + "Reporte_" + nombreAutomata + ".png");
+                    ImageIO.write(imagenFinal, "png", archivoSalida);
+                    abrirArchivo(archivoSalida, "imagen");
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(this, "Error al generar el reporte visual: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
                 }
-                BufferedImage imagenGrafo = ImageIO.read(archivoGrafo);
 
-                // 4. Combinar ambas imágenes
-                BufferedImage imagenFinal = combinarImagenes(imagenTexto, imagenGrafo);
+            } else if (n == 1) { // --- Reporte de Pasos ---
+                String cadenaParaValidar = JOptionPane.showInputDialog(this, "Ingrese la cadena que desea validar:", "Validación de Cadena", JOptionPane.QUESTION_MESSAGE);
+                if (cadenaParaValidar == null) {
+                    return;
+                }
 
-                // 5. Guardar y abrir la imagen final
-                File archivoSalida = new File(System.getProperty("java.io.tmpdir") + "Reporte_" + nombreAutomata + ".png");
-                ImageIO.write(imagenFinal, "png", archivoSalida);
-                abrirArchivo(archivoSalida.getAbsolutePath(), "imagen");
+                automata.validar(cadenaParaValidar);
 
-            } catch (Exception e) {
-                e.printStackTrace();
-                JOptionPane.showMessageDialog(this, "Error al generar el reporte visual: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                if (automata instanceof AFD) {
+                    String dotSource = ((AFD) automata).generarDotPasoAPaso(cadenaParaValidar);
+                    File imageFile = Utilidades.GraphvizGenerator.generarImagen("Pasos_AFD_" + nombreAutomata, dotSource);
+                    abrirArchivo(imageFile, "imagen de pasos");
+                } else if (automata instanceof AutomataPila) {
+                    // Lógica para AP (próximo paso)
+                    JOptionPane.showMessageDialog(this, "El reporte de pasos para Autómatas de Pila aún no está implementado.", "Información", JOptionPane.INFORMATION_MESSAGE);
+                }
             }
         }
     }
 
-    // NUEVO MÉTODO AUXILIAR para abrir archivos
-    private void abrirArchivo(String ruta, String tipoArchivo) {
-        if (ruta != null) {
+    // MÉTODO AUXILIAR para abrir archivos (Actualizado para recibir File)
+    private void abrirArchivo(File archivo, String tipoArchivo) {
+        if (archivo != null && archivo.exists()) {
             try {
-                Desktop.getDesktop().open(new File(ruta));
+                Desktop.getDesktop().open(archivo);
             } catch (Exception e) {
                 JOptionPane.showMessageDialog(this, "No se pudo abrir la " + tipoArchivo + " generada.", "Error", JOptionPane.ERROR_MESSAGE);
             }
@@ -488,59 +504,38 @@ public class VentanaPrincipal extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this, "Error al generar la " + tipoArchivo + ". Asegúrese de que Graphviz esté instalado.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
-    
-    
-    /**
-     * Crea una imagen a partir de un bloque de texto.
-     */
+
     private BufferedImage crearImagenDeTexto(String texto) {
         String[] lineas = texto.split("\n");
         int lineHeight = 20;
         int padding = 20;
-        int width = 450; // Ancho fijo para la tabla de info
+        int width = 450;
         int height = (lineas.length * lineHeight) + (2 * padding);
-
         BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = image.createGraphics();
-
-        // Fondo blanco
         g2d.setColor(Color.WHITE);
         g2d.fillRect(0, 0, width, height);
-
-        // Texto negro
         g2d.setColor(Color.BLACK);
-        g2d.setFont(new Font("Consolas", Font.PLAIN, 16));
-
-        // Dibujar cada línea de texto
+        g2d.setFont(new Font("Consolas", Font.PLAIN, 14));
         int y = padding + lineHeight;
         for (String linea : lineas) {
             g2d.drawString(linea, padding, y);
             y += lineHeight;
         }
-
         g2d.dispose();
         return image;
     }
 
-    /**
-     * Combina dos imágenes una al lado de la otra.
-     */
     private BufferedImage combinarImagenes(BufferedImage img1, BufferedImage img2) {
         int padding = 20;
         int width = img1.getWidth() + img2.getWidth() + (3 * padding);
         int height = Math.max(img1.getHeight(), img2.getHeight()) + (2 * padding);
-
         BufferedImage combined = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g2d = combined.createGraphics();
-
-        // Fondo blanco
         g2d.setColor(Color.WHITE);
         g2d.fillRect(0, 0, width, height);
-
-        // Dibujar las dos imágenes
         g2d.drawImage(img1, padding, padding, null);
         g2d.drawImage(img2, img1.getWidth() + (2 * padding), padding, null);
-
         g2d.dispose();
         return combined;
     }
