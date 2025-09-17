@@ -1,0 +1,157 @@
+/* 1. Package e importaciones */
+package Analizadores;
+import java_cup.runtime.*;
+import Clases.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+/* 2. Codigo para el parser */
+parser code
+{:
+    public Map<String, Automata> automatas = new HashMap<>();
+    private StringBuilder salidaConsola = new StringBuilder();
+
+    // Este método ahora guardará los errores en el StringBuilder para la GUI
+    public void syntax_error(Symbol cur_token) {
+        String errorMessage = "Error sintactico en la linea " + (cur_token.left + 1) + ", columna " + (cur_token.right + 1) + ". Token: " + cur_token.value + "\n";
+        salidaConsola.append(errorMessage);
+    }
+    
+    // Este método ahora guardará los errores en el StringBuilder para la GUI
+    public void report_error(String message, Object info) {
+        salidaConsola.append("Error: ").append(message).append("\n");
+    }
+
+    // --- Métodos para que la GUI obtenga los resultados ---
+    public String getSalidaConsola() {
+        return salidaConsola.toString();
+    }
+    
+    public Map<String, Automata> getAutomatas() {
+        return this.automatas;
+    }
+:}
+
+/* 3. Terminales (sin cambios) */
+terminal String ID, CADENA;
+terminal PR_TRANSI, PR_VER, PR_DESC;
+terminal LLAV_IZQ, LLAV_DER, PT_COMA, COMA, IGUAL, MAYOR;
+terminal TAG_AFD_A, TAG_AFD_C, TAG_AP_A, TAG_AP_C;
+terminal ATTR_NOMBRE;
+terminal String ESTADO, SIMBOLO, VACIO;
+terminal FLECHA, VERTICAL, DOS_PUNTOS, PAR_IZQ, PAR_DER;
+
+/* 4. No Terminales (sin cambios) */
+non terminal ini, sentencias, sentencia;
+non terminal definicion_afd, definicion_ap;
+non terminal ArrayList<Character> lista_estados, lista_simbolos;
+non terminal ArrayList<Transicion> def_transiciones_afd, lista_trans_afd, transicion_afd, cuerpo_trans_afd;
+non terminal ArrayList<TransicionPila> def_transiciones_ap, lista_trans_ap, transicion_ap, cuerpo_trans_ap;
+non terminal TransicionPila una_trans_ap;
+non terminal String simbolo_o_vacio, keyword;
+non terminal llamada_funcion;
+
+/* 5. Producciones */
+start with ini;
+
+ini ::= sentencias;
+
+sentencias ::= sentencias sentencia | sentencia;
+
+sentencia ::= definicion_afd | definicion_ap | llamada_funcion;
+
+/* Definiciones (Actualizadas para no imprimir en consola) */
+definicion_afd ::= TAG_AFD_A ATTR_NOMBRE IGUAL CADENA:nombre MAYOR
+                    keyword:n_kw IGUAL LLAV_IZQ lista_estados:estados LLAV_DER PT_COMA
+                    keyword:t_kw IGUAL LLAV_IZQ lista_simbolos:alfabeto LLAV_DER PT_COMA
+                    keyword:i_kw IGUAL LLAV_IZQ ESTADO:inicial LLAV_DER PT_COMA
+                    keyword:a_kw IGUAL LLAV_IZQ lista_estados:aceptacion LLAV_DER PT_COMA
+                    def_transiciones_afd:transiciones
+                    TAG_AFD_C
+                    {:
+                        if (!n_kw.equals("N") || !t_kw.equals("T") || !i_kw.equals("I") || !a_kw.equals("A")) {
+                            parser.report_error("Error Semantico: Se esperaba N, T, I, A para la definicion del AFD", null);
+                        } else {
+                            AFD nuevoAFD = new AFD(estados, alfabeto, aceptacion, inicial.charAt(0), transiciones);
+                            parser.automatas.put(nombre, nuevoAFD);
+                            salidaConsola.append("-> AFD '").append(nombre).append("' creado exitosamente.\n");
+                        }
+                    :};
+
+definicion_ap ::= TAG_AP_A ATTR_NOMBRE IGUAL CADENA:nombre MAYOR
+                    keyword:n_kw IGUAL LLAV_IZQ lista_estados:estados LLAV_DER PT_COMA
+                    keyword:t_kw IGUAL LLAV_IZQ lista_simbolos:alfabeto LLAV_DER PT_COMA
+                    keyword:p_kw IGUAL LLAV_IZQ lista_simbolos:pila LLAV_DER PT_COMA
+                    keyword:i_kw IGUAL LLAV_IZQ ESTADO:inicial LLAV_DER PT_COMA
+                    keyword:a_kw IGUAL LLAV_IZQ lista_estados:aceptacion LLAV_DER PT_COMA
+                    def_transiciones_ap:transiciones
+                    TAG_AP_C
+                    {:
+                         if (!n_kw.equals("N") || !t_kw.equals("T") || !p_kw.equals("P") || !i_kw.equals("I") || !a_kw.equals("A")) {
+                            parser.report_error("Error Semantico: Se esperaba N, T, P, I, A para la definicion del AP", null);
+                        } else {
+                            AutomataPila nuevoAP = new AutomataPila(estados, alfabeto, aceptacion, inicial.charAt(0), pila, transiciones);
+                            parser.automatas.put(nombre, nuevoAP);
+                            salidaConsola.append("-> AP '").append(nombre).append("' creado exitosamente.\n");
+                        }
+                    :};
+                    
+keyword ::= ID:i {: RESULT = i; :} | ESTADO:e {: RESULT = e; :};
+
+/* Transiciones (sin cambios en la lógica de gramática) */
+def_transiciones_afd ::= PR_TRANSI DOS_PUNTOS lista_trans_afd:lista {: RESULT = lista; :};
+lista_trans_afd ::= lista_trans_afd:lista transicion_afd:t {: lista.addAll(t); RESULT = lista; :}
+                  | transicion_afd:t {: RESULT = t; :};
+transicion_afd ::= ESTADO:origen FLECHA cuerpo_trans_afd:cuerpo PT_COMA
+                    {: for(Transicion trans : cuerpo) { trans.nombreEstadoPrimero = origen.charAt(0); } RESULT = cuerpo; :};
+cuerpo_trans_afd ::= cuerpo_trans_afd:lista VERTICAL SIMBOLO:simb COMA ESTADO:dest {: lista.add(new Transicion(simb.charAt(0), ' ', dest.charAt(0))); RESULT = lista; :}
+                   | SIMBOLO:simb COMA ESTADO:dest {: ArrayList<Transicion> n = new ArrayList<>(); n.add(new Transicion(simb.charAt(0), ' ', dest.charAt(0))); RESULT = n; :};
+def_transiciones_ap ::= PR_TRANSI DOS_PUNTOS lista_trans_ap:lista {: RESULT = lista; :};
+lista_trans_ap ::= lista_trans_ap:lista transicion_ap:t {: lista.addAll(t); RESULT = lista; :}
+                  | transicion_ap:t {: RESULT = t; :};
+transicion_ap ::= ESTADO:origen cuerpo_trans_ap:cuerpo PT_COMA
+                  {: for(TransicionPila trans : cuerpo) { trans.nombreEstadoPrimero = origen.charAt(0); } RESULT = cuerpo; :};
+cuerpo_trans_ap ::= cuerpo_trans_ap:lista VERTICAL una_trans_ap:t {: lista.add(t); RESULT = lista; :}
+                  | una_trans_ap:t {: ArrayList<TransicionPila> n = new ArrayList<>(); n.add(t); RESULT = n; :};
+una_trans_ap ::= PAR_IZQ simbolo_o_vacio:entrada PAR_DER FLECHA PAR_IZQ simbolo_o_vacio:extrae PAR_DER COMA ESTADO:dest DOS_PUNTOS PAR_IZQ simbolo_o_vacio:inserta PAR_DER
+                 {: RESULT = new TransicionPila(entrada.charAt(0), ' ', dest.charAt(0), inserta.charAt(0), extrae.charAt(0)); :};
+lista_estados ::= lista_estados:lista COMA ESTADO:e {: lista.add(e.charAt(0)); RESULT = lista; :}
+                | ESTADO:e {: ArrayList<Character> n = new ArrayList<>(); n.add(e.charAt(0)); RESULT = n; :};
+lista_simbolos ::= lista_simbolos:lista COMA SIMBOLO:s {: lista.add(s.charAt(0)); RESULT = lista; :}
+                 | SIMBOLO:s {: ArrayList<Character> n = new ArrayList<>(); n.add(s.charAt(0)); RESULT = n; :};
+simbolo_o_vacio ::= SIMBOLO:s {: RESULT = s; :} | VACIO:v {: RESULT = v; :};
+
+/* Llamadas a Funciones (Actualizadas para no imprimir en consola) */
+llamada_funcion ::= PR_VER PAR_IZQ PAR_DER PT_COMA
+                    {:
+                        salidaConsola.append("\n======= LISTA DE AUTOMATAS CREADOS =======\n");
+                        for (Map.Entry<String, Automata> entry : parser.automatas.entrySet()) {
+                            String nombre = entry.getKey();
+                            Automata automata = entry.getValue();
+                            String tipo = (automata instanceof AFD) ? "Automata Finito Determinista" : "Automata de Pila";
+                            salidaConsola.append("- ").append(nombre).append(" (").append(tipo).append(")\n");
+                        }
+                        salidaConsola.append("==========================================\n");
+                    :}
+                  | PR_DESC PAR_IZQ ID:nombre PAR_DER PT_COMA
+                    {:
+                        Automata a = parser.automatas.get(nombre);
+                        if (a != null) {
+                            salidaConsola.append(a.mostrarInfo(nombre));
+                        } else { 
+                            salidaConsola.append("Error: El automata '").append(nombre).append("' no existe.\n");
+                        }
+                    :}
+                  | ID:nombre PAR_IZQ CADENA:cadena PAR_DER PT_COMA
+                    {:
+                        Automata a = parser.automatas.get(nombre);
+                        if (a != null) {
+                             if (a instanceof AutomataInterfaz) {
+                                String resultado = ((AutomataInterfaz)a).validar(cadena);
+                                salidaConsola.append(resultado).append("\n");
+                            }
+                        } else { 
+                            salidaConsola.append("Error: El automata '").append(nombre).append("' no existe.\n");
+                        }
+                    :};
